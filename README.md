@@ -1,5 +1,6 @@
 
-**Based on the strategy we outlined:**
+**Based on the strategy we outlined:**  ( Gemini Advanced 2.5 Pro (experimental))
+
 
 - **Integration**: You build **beta unlocked packages** from the develop branch, and then you deploy those packages into the Integration sandbox.
 - **UAT/Preprod**: You promote the package version created from the release/* branch, and then you **deploy that promoted (released) package into the UAT sandbox.**
