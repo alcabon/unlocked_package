@@ -429,20 +429,18 @@ Here's the updated run section for the Promote Package Version(s) step in your d
 - **Query and Filter**: Uses sf package version list with JSON output piped to jq.
 
 ## jq Logic:
+
 - Filters the .result array for entries where the Branch property matches "develop".
 - Sorts the filtered results by CreatedDate (latest first).
 - Takes the first element (.[0]) of the sorted array.
 - Extracts its SubscriberPackageVersionId.
 - Uses // empty as a fallback in case no matching version is found.
-  
 - **Validation:** Added an if statement to check if LATEST_BETA_ID is empty or null and exits with an error if no suitable version was found.
 - **Uses** ::error:: for better visibility in GitHub Actions logs.
 - **Promotion**: Uses the dynamically found $LATEST_BETA_ID in the sf package version promote command.
 - **Output**: Sets the PROMOTED_PACKAGE_VERSION_ID output using the dynamic ID.
 - 
 This approach reliably finds the latest beta package version created from your develop branch, making the promotion step dynamic and removing the need for manual intervention or hardcoding.
-
-
 
 ## Addressing the Challenges:
 
