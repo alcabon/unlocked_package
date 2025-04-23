@@ -269,82 +269,7 @@ jobs:
         sf apex run test --test-level RunSpecifiedTests --class-names "MySalesFeatureTests,AnotherTestClass" --target-org integ-org --result-format human --synchronous
 ```
 
-**Let's resolve that tricky part** by replacing the hardcoded package version ID with dynamic logic using sf package version list and jq.
-
-**This script assumes:**
-
-- The package name (e.g., "SalesFeature") is available (here, hardcoded for simplicity, but ideally passed dynamically).
-- The beta package creation step included the --branch develop flag (or dynamically ${{ github.ref_name }} if run on the develop branch push).
-- jq is available on the runner.
-
-Here's the updated run section for the Promote Package Version(s) step in your deploy-uat.yml (or equivalent) workflow:
-
-```YAML
-
-    - name: Promote Package Version(s)
-      id: promote_package
-      run: |
-        # --- Dynamic Package Version Promotion ---
-        # Define the package name. Ideally, get this dynamically (e.g., from sfdx-project.json or workflow inputs)
-        PACKAGE_NAME="SalesFeature" # Adjust this to your actual package name
-
-        echo "Attempting to find the latest beta package version for '$PACKAGE_NAME' created from the 'develop' branch..."
-
-        # Query package versions using Salesforce CLI, filtering for the specific package and beta status.
-        # Use jq to:
-        # 1. Filter results to only include versions created from the 'develop' branch.
-        # 2. Sort these versions by CreatedDate in descending order (latest first).
-        # 3. Select the SubscriberPackageVersionId (04t...) of the first result (the latest).
-        # 4. Handle cases where no matching version is found (output empty string).
-        LATEST_BETA_ID=$(sf package version list --packages "$PACKAGE_NAME" --released-status beta --concise --json | \
-          jq -r --arg branchName "develop" '
-            .result |
-            map(select(.Branch == $branchName)) |
-            sort_by(.CreatedDate) | reverse | .[0].SubscriberPackageVersionId // empty
-        ')
-
-        # Validate that a Package Version ID was actually found
-        if [ -z "$LATEST_BETA_ID" ] || [ "$LATEST_BETA_ID" == "null" ]; then
-          echo "::error::Could not find a suitable beta package version for '$PACKAGE_NAME' created from the 'develop' branch to promote."
-          # Optionally list available versions for debugging:
-          # sf package version list --packages "$PACKAGE_NAME" --released-status beta --concise
-          exit 1
-        fi
-
-        echo "Found latest beta Package Version ID to promote: $LATEST_BETA_ID"
-
-        # Promote the dynamically found package version ID
-        echo "Promoting Package Version ID: $LATEST_BETA_ID"
-        sf package version promote --package "$LATEST_BETA_ID" --no-prompt
-
-        # Optional: Add a check here to confirm the promotion was successful by querying the package version status again.
-
-        # Output the promoted ID for subsequent steps (like deployment)
-        echo "Successfully promoted package version."
-        echo "PROMOTED_PACKAGE_VERSION_ID=$LATEST_BETA_ID" >> $GITHUB_OUTPUT
-```
-
-**Explanation of Changes:**
-
-- **Package Name**: Defined PACKAGE_NAME. Remember to replace "SalesFeature" with your actual package name or implement a way to determine it dynamically.
-- **Query and Filter**: Uses sf package version list with JSON output piped to jq.
-
-## jq Logic:
-- Filters the .result array for entries where the Branch property matches "develop".
-- Sorts the filtered results by CreatedDate (latest first).
-- Takes the first element (.[0]) of the sorted array.
-- Extracts its SubscriberPackageVersionId.
-- Uses // empty as a fallback in case no matching version is found.
-  
-- **Validation:** Added an if statement to check if LATEST_BETA_ID is empty or null and exits with an error if no suitable version was found.
-- **Uses** ::error:: for better visibility in GitHub Actions logs.
-- **Promotion**: Uses the dynamically found $LATEST_BETA_ID in the sf package version promote command.
-- **Output**: Sets the PROMOTED_PACKAGE_VERSION_ID output using the dynamic ID.
-- 
-This approach reliably finds the latest beta package version created from your develop branch, making the promotion step dynamic and removing the need for manual intervention or hardcoding.
-
-
-### 3. Promote & Deploy to UAT (.github/workflows/deploy-uat.yml)
+### 3.a Promote & Deploy to UAT (.github/workflows/deploy-uat.yml)
 
 ```YAML
 
@@ -440,6 +365,84 @@ jobs:
         # Usually RunLocalTests or specific suites validated in UAT
         sf apex run test --test-level RunLocalTests --target-org prod-org --result-format human --synchronous
 ```
+
+### 3.b Promote & Deploy to UAT (.github/workflows/deploy-uat.yml)
+
+**Let's resolve that tricky part** by replacing the hardcoded package version ID with dynamic logic using sf package version list and jq.
+
+**This script assumes:**
+
+- The package name (e.g., "SalesFeature") is available (here, hardcoded for simplicity, but ideally passed dynamically).
+- The beta package creation step included the --branch develop flag (or dynamically ${{ github.ref_name }} if run on the develop branch push).
+- jq is available on the runner.
+
+Here's the updated run section for the Promote Package Version(s) step in your deploy-uat.yml (or equivalent) workflow:
+
+```YAML
+
+    - name: Promote Package Version(s)
+      id: promote_package
+      run: |
+        # --- Dynamic Package Version Promotion ---
+        # Define the package name. Ideally, get this dynamically (e.g., from sfdx-project.json or workflow inputs)
+        PACKAGE_NAME="SalesFeature" # Adjust this to your actual package name
+
+        echo "Attempting to find the latest beta package version for '$PACKAGE_NAME' created from the 'develop' branch..."
+
+        # Query package versions using Salesforce CLI, filtering for the specific package and beta status.
+        # Use jq to:
+        # 1. Filter results to only include versions created from the 'develop' branch.
+        # 2. Sort these versions by CreatedDate in descending order (latest first).
+        # 3. Select the SubscriberPackageVersionId (04t...) of the first result (the latest).
+        # 4. Handle cases where no matching version is found (output empty string).
+        LATEST_BETA_ID=$(sf package version list --packages "$PACKAGE_NAME" --released-status beta --concise --json | \
+          jq -r --arg branchName "develop" '
+            .result |
+            map(select(.Branch == $branchName)) |
+            sort_by(.CreatedDate) | reverse | .[0].SubscriberPackageVersionId // empty
+        ')
+
+        # Validate that a Package Version ID was actually found
+        if [ -z "$LATEST_BETA_ID" ] || [ "$LATEST_BETA_ID" == "null" ]; then
+          echo "::error::Could not find a suitable beta package version for '$PACKAGE_NAME' created from the 'develop' branch to promote."
+          # Optionally list available versions for debugging:
+          # sf package version list --packages "$PACKAGE_NAME" --released-status beta --concise
+          exit 1
+        fi
+
+        echo "Found latest beta Package Version ID to promote: $LATEST_BETA_ID"
+
+        # Promote the dynamically found package version ID
+        echo "Promoting Package Version ID: $LATEST_BETA_ID"
+        sf package version promote --package "$LATEST_BETA_ID" --no-prompt
+
+        # Optional: Add a check here to confirm the promotion was successful by querying the package version status again.
+
+        # Output the promoted ID for subsequent steps (like deployment)
+        echo "Successfully promoted package version."
+        echo "PROMOTED_PACKAGE_VERSION_ID=$LATEST_BETA_ID" >> $GITHUB_OUTPUT
+```
+
+**Explanation of Changes:**
+
+- **Package Name**: Defined PACKAGE_NAME. Remember to replace "SalesFeature" with your actual package name or implement a way to determine it dynamically.
+- **Query and Filter**: Uses sf package version list with JSON output piped to jq.
+
+## jq Logic:
+- Filters the .result array for entries where the Branch property matches "develop".
+- Sorts the filtered results by CreatedDate (latest first).
+- Takes the first element (.[0]) of the sorted array.
+- Extracts its SubscriberPackageVersionId.
+- Uses // empty as a fallback in case no matching version is found.
+  
+- **Validation:** Added an if statement to check if LATEST_BETA_ID is empty or null and exits with an error if no suitable version was found.
+- **Uses** ::error:: for better visibility in GitHub Actions logs.
+- **Promotion**: Uses the dynamically found $LATEST_BETA_ID in the sf package version promote command.
+- **Output**: Sets the PROMOTED_PACKAGE_VERSION_ID output using the dynamic ID.
+- 
+This approach reliably finds the latest beta package version created from your develop branch, making the promotion step dynamic and removing the need for manual intervention or hardcoding.
+
+
 
 ## Addressing the Challenges:
 
