@@ -1,13 +1,66 @@
+```mermaid
+%%{ init: { 'theme': 'base', 'themeVariables': { 'primaryColor': '#F7941D', 'lineColor': '#fbc02d', 'textColor': '#333','secondaryColor': '#FFFF00', 'tertiaryColor': '#fff' } } }%%
+graph TD
+    subgraph "Development Phase (Source-Driven)"
+        Dev[Developer Workstation / Dev Org] -- "Commit Code" --> Git_Feature(Git: feature/* branch);
+    end
+
+    subgraph "CI & Integration (Transition to Package)"
+        Git_Feature -- "Create Pull Request" --> PR(Pull Request);
+        PR -- Trigger --> GHA_Validate(GitHub Action: Validate PR);
+        GHA_Validate -- "Validates Against" --> CI_Org[(CI Org / Sandbox)];
+        PR -- "Merge (Approved)" --> Git_Develop(Git: develop branch);
+        Git_Develop -- Trigger --> GHA_BuildBeta(GitHub Action: Build Beta Package);
+        GHA_BuildBeta -- Creates --> BetaPkg{Beta Unlocked Package};
+        GHA_BuildBeta -- Deploys --> Integ_Sandbox[(Integration Sandbox)];
+        BetaPkg -- "Installed In" --> Integ_Sandbox;
+        GHA_BuildBeta -- "Runs Tests In" --> Integ_Sandbox;
+    end
+
+    subgraph "UAT Phase (Package-Based)"
+        Git_Develop -- "Create Release Branch" --> Git_Release(Git: release/* branch);
+        Git_Release -- Trigger --> GHA_Promote(GitHub Action: Promote Package);
+        GHA_Promote -- Promotes --> BetaPkg;
+        GHA_Promote -- "Results In" --> ReleasedPkg{{Promoted/Released Unlocked Package}};
+        GHA_Promote -- Deploys --> UAT_Sandbox[(UAT Sandbox)];
+        ReleasedPkg -- "Installed In" --> UAT_Sandbox;
+        GHA_Promote -- "Runs Tests In" --> UAT_Sandbox;
+    end
+
+    subgraph "Production Phase (Package-Based)"
+        Git_Release -- "Merge (Approved)" --> Git_Main(Git: main branch);
+        Git_Main -- "Trigger (or Manual)" --> GHA_DeployProd(GitHub Action: Deploy to Prod);
+        GHA_DeployProd -- Deploys --> Prod_Org(((Production Org)));
+        ReleasedPkg -- "Installed In" --> Prod_Org;
+        GHA_DeployProd -- "Runs Tests In" --> Prod_Org;
+    end
+
+    %% Styling (Optional - depends on renderer)
+    classDef gitBranch fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#333;
+    classDef sandbox fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#333;
+    classDef prodOrg fill:#fff3e0,stroke:#ef6c00,stroke-width:3px,color:#333;
+    classDef package fill:#fffde7,stroke:#fbc02d,stroke-width:2px,color:#333; %% Yellow/Gold theme for packages
+    classDef action fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,color:#333; %% Changed fill AND stroke to yellow
+
+    class Git_Feature,Git_Develop,Git_Release,Git_Main gitBranch;
+    class CI_Org,Integ_Sandbox,UAT_Sandbox sandbox;
+    class Prod_Org prodOrg;
+    class BetaPkg,ReleasedPkg package;
+    class GHA_Validate,GHA_BuildBeta,GHA_Promote,GHA_DeployProd action;
+
+```
+
+
 # unlocked_package
 
-Okay, let's break down an optimal strategy for Salesforce DevOps using a hybrid approach: source-driven development in Dev orgs, transitioning to unlocked packages for Integration, UAT, and Production, all orchestrated with GitHub Actions.
+Let's break down an optimal strategy for Salesforce DevOps using a hybrid approach: source-driven development in Dev orgs, transitioning to unlocked packages for Integration, UAT, and Production, all orchestrated with GitHub Actions.
 
 This model attempts to balance developer speed in early stages with the robustness and modularity of packages for release management. However, as you noted, it presents challenges, primarily around ensuring consistency between the source-based Dev environment and the packaged deployments.
 
-Core Strategy: Git as the Source of Truth, Package-Centric Releases
+## Core Strategy: Git as the Source of Truth, Package-Centric Releases
 
-Source Control (Git/GitHub): This is non-negotiable. Your Git repository must be the absolute source of truth for all metadata, regardless of where development initially happens.
-Repository Structure: Structure your Git repository like an SFDX project from the beginning, even if developers aren't building package versions initially. Define your package directories within sfdx-project.json.
+- **Source Control (Git/GitHub):** This is non-negotiable. Your Git repository must be the absolute source of truth for all metadata, regardless of where development initially happens.
+- **Repository Structure:** Structure your Git repository like an SFDX project from the beginning, even if developers aren't building package versions initially. Define your package directories within sfdx-project.json.
 
 ```JSON
 
@@ -31,36 +84,44 @@ Repository Structure: Structure your Git repository like an SFDX project from th
 }
 ```
 
-Development Process:
-Developers work on feature branches checked out from a main development branch (e.g., develop).
-They connect their local VS Code/SFDX CLI to a shared Dev sandbox or individual Dev orgs.
-Crucially: Developers use sf project deploy start and sf project retrieve start (or VS Code extensions) to sync metadata between their local, correctly structured SFDX project (cloned from Git) and their assigned Dev org.
-They commit changes to the appropriate package directory within their feature branch in Git.
-Continuous Integration (CI) - Feature Branch/Pull Request:
+## Development Process:
+
+- Developers work on feature branches checked out from a main development branch (e.g., develop).
+- They connect their local VS Code/SFDX CLI to a shared Dev sandbox or individual Dev orgs.
+- **Crucially**: Developers use sf project deploy start and sf project retrieve start (or VS Code extensions) to sync metadata between their local, correctly structured SFDX project (cloned from Git) and their assigned Dev org.
+- They commit changes to the appropriate package directory within their feature branch in Git.
+
+## Continuous Integration (CI) - Feature Branch/Pull Request:
 When a feature branch is pushed or a Pull Request is opened against develop, a GitHub Action should trigger.
 Action: Validate the metadata in the PR against a dedicated CI scratch org or sandbox. This catches syntax errors and basic deployment issues early. Run local Apex tests included in the committed source.
-Integration - Merging to develop:
+
+## Integration - Merging to develop:
 Upon merging a feature branch into develop, a GitHub Action triggers the core packaging and deployment process.
-Action:
-Build Beta Package(s): Create beta versions of the unlocked package(s) defined in sfdx-project.json from the develop branch source code.
-Deploy to Integration: Install these beta package(s) into the Integration environment (a dedicated sandbox).
-Run Tests: Execute Apex tests within the Integration sandbox (potentially a wider set of tests than in CI).
-User Acceptance Testing (UAT) - Release Branch:
+# Action:
+  - **Build Beta Package(s):** Create beta versions of the unlocked package(s) defined in sfdx-project.json from the develop branch source code.
+  - **Deploy to Integration**: Install these beta package(s) into the Integration environment (a dedicated sandbox).
+  - **Run Tests:** Execute Apex tests within the Integration sandbox (potentially a wider set of tests than in CI).
+
+## User Acceptance Testing (UAT) - Release Branch:
+
 When develop is deemed ready for UAT, create a release/ branch (e.g., release/v1.2.0).
-Action (Triggered on release/* branch creation/push):
-Promote Package(s): Find the last successful beta package version(s) created from the commit lineage now in the release branch and promote them to released status. This locks the package version.
-Deploy to UAT: Install the promoted (released) package version(s) into the UAT sandbox.
-Run Tests: Execute relevant tests in UAT (Apex tests, potentially trigger automated UI tests).
-Production Deployment - Merging to main:
+- Action (Triggered on release/* branch creation/push):
+  - **Promote Package(s)**: Find the last successful beta package version(s) created from the commit lineage now in the release branch and promote them to released status. This locks the package version.
+  - **Deploy to UAT**: Install the promoted (released) package version(s) into the UAT sandbox.
+  - **Run Tests**: Execute relevant tests in UAT (Apex tests, potentially trigger automated UI tests).
+
+## Production Deployment - Merging to main:
+
 After successful UAT sign-off, merge the release/* branch into main and tag the merge commit (e.g., v1.2.0).
-Action (Triggered on merge to main or manual trigger):
-Deploy to Production: Install the exact same promoted package version(s) that were tested in UAT into the Production org. Use the --target-org ProductionAlias.
-Run Tests: Execute specified Apex tests (often RunLocalTests or a specific suite) in Production.
-GitHub Actions Examples (Conceptual YAML)
+- Action (Triggered on merge to main or manual trigger):
+  - **Deploy to Production:** Install the exact same promoted package version(s) that were tested in UAT into the Production org. Use the --target-org ProductionAlias.
+  - **Run Tests:** Execute specified Apex tests (often RunLocalTests or a specific suite) in Production.
+
+## GitHub Actions Examples (Conceptual YAML)
 
 You'll need Actions secrets for Dev Hub, Integration, UAT, and Prod org authentication (preferably using JWT Bearer Flow).
 
-1. Validate PR (.github/workflows/validate-pr.yml)
+### 1. Validate PR (.github/workflows/validate-pr.yml)
 
 ```YAML
 
@@ -94,8 +155,8 @@ jobs:
       run: sf project deploy validate --source-dir force-app --target-org ci-org --test-level RunLocalTests
 
     # Optional: Add specific Apex test execution here if needed
-2. Build Beta Package & Deploy to Integration (.github/workflows/deploy-integ.yml)
 ```
+### 2. Build Beta Package & Deploy to Integration (.github/workflows/deploy-integ.yml)
 
 ```YAML
 
@@ -151,7 +212,7 @@ jobs:
         sf apex run test --test-level RunSpecifiedTests --class-names "MySalesFeatureTests,AnotherTestClass" --target-org integ-org --result-format human --synchronous
 ```
 
-3. Promote & Deploy to UAT (.github/workflows/deploy-uat.yml)
+### 3. Promote & Deploy to UAT (.github/workflows/deploy-uat.yml)
 
 ```YAML
 
@@ -204,7 +265,7 @@ jobs:
         sf apex run test --test-level RunSpecifiedTests --class-names "MySalesFeatureTests,AnotherTestClass" --target-org uat-org --result-format human --synchronous # Adjust test level/classes for UAT
 ```
 
-4. Deploy to Production (.github/workflows/deploy-prod.yml)
+### 4. Deploy to Production (.github/workflows/deploy-prod.yml)
 
 ```YAML
 
@@ -248,12 +309,12 @@ jobs:
         sf apex run test --test-level RunLocalTests --target-org prod-org --result-format human --synchronous
 ```
 
-Addressing the Challenges:
+## Addressing the Challenges:
 
-Consistency Dev vs. Package: This is the biggest hurdle.
-Discipline: Developers must use sf project retrieve to pull changes into the correct package structure locally before committing. Avoid developing components directly in the Dev org UI without syncing back.
-Validation: The CI validation step (sf project deploy validate) against a clean org is crucial to catch issues caused by dependencies or metadata existing in the Dev org but not committed to Git.
-Dependency Definition: Be meticulous in defining package dependencies in sfdx-project.json. The packaging step (sf package version create) will fail if dependencies aren't met within the codebase being packaged.
-Metadata Not Packageable: Maintain these components (e.g., Profiles, Queues, Groups, some Reports/Dashboards) in a separate directory (e.g., unpackaged-metadata). Add steps to your GitHub Actions (after package installation) to deploy this metadata using sf project deploy start --source-dir unpackaged-metadata --target-org <alias>. Manage this carefully, as it bypasses package versioning.
-Finding the Right Beta Version to Promote: This requires robust logic. Using Git tags (--tag "${{ github.sha }}" during beta creation) and then querying based on the commit history of the release branch is a common approach. You might query sf package version list --verbose and filter using jq based on the tag or branch.
-This hybrid strategy requires significant team discipline and robust automation to mitigate the risks of divergence between the development environment and the packaged artifacts. Starting development within the package structure from the beginning, possibly using scratch orgs, generally leads to a smoother process, although it might have a steeper initial learning curve.
+# Consistency Dev vs. Package: This is the biggest hurdle.
+- **Discipline**: Developers must use sf project retrieve to pull changes into the correct package structure locally before committing. Avoid developing components directly in the Dev org UI without syncing back.
+- **Validation**: The CI validation step (sf project deploy validate) against a clean org is crucial to catch issues caused by dependencies or metadata existing in the Dev org but not committed to Git.
+- **Dependency Definition**: Be meticulous in defining package dependencies in sfdx-project.json. The packaging step (sf package version create) will fail if dependencies aren't met within the codebase being packaged.
+- **Metadata Not Packageable**: Maintain these components (e.g., Profiles, Queues, Groups, some Reports/Dashboards) in a separate directory (e.g., unpackaged-metadata). Add steps to your GitHub Actions (after package installation) to deploy this metadata using sf project deploy start --source-dir unpackaged-metadata --target-org <alias>. Manage this carefully, as it bypasses package versioning.
+- **Finding the Right Beta Version to Promote:** This requires robust logic. Using Git tags (--tag "${{ github.sha }}" during beta creation) and then querying based on the commit history of the release branch is a common approach. You might query sf package version list --verbose and filter using jq based on the tag or branch.
+- This hybrid strategy requires significant team discipline and robust automation to mitigate the risks of divergence between the development environment and the packaged artifacts. Starting development within the package structure from the beginning, possibly using scratch orgs, generally leads to a smoother process, although it might have a steeper initial learning curve.
