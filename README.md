@@ -1,13 +1,12 @@
+## Core Strategy: Git as the Source of Truth, Package-Centric Releases
 
 **Based on the strategy we outlined:**  ( Gemini Advanced 2.5 Pro (experimental))
-
 
 - **Integration**: You build **beta unlocked packages** from the develop branch, and then you deploy those packages into the Integration sandbox.
 - **UAT/Preprod**: You promote the package version created from the release/* branch, and then you **deploy that promoted (released) package into the UAT sandbox.**
 - **Production**: You **deploy the same promoted package that was tested in UAT into Production.**
   
 So, while the source for building the packages comes directly from the Git branches (develop, release/*), **the actual deployment artifact pushed into the Integration and UAT sandboxes is the unlocked package, not the raw source code via sf project deploy**. This ensures you are testing the package mechanism early in the cycle.
-
 
 ```mermaid
 %%{ init: { 'theme': 'base', 'themeVariables': { 'primaryColor': '#F7941D', 'lineColor': '#fbc02d', 'textColor': '#333','secondaryColor': '#FFFF00', 'tertiaryColor': '#fff' } } }%%
