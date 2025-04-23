@@ -8,7 +8,8 @@ Core Strategy: Git as the Source of Truth, Package-Centric Releases
 
 Source Control (Git/GitHub): This is non-negotiable. Your Git repository must be the absolute source of truth for all metadata, regardless of where development initially happens.
 Repository Structure: Structure your Git repository like an SFDX project from the beginning, even if developers aren't building package versions initially. Define your package directories within sfdx-project.json.
-JSON
+
+```JSON
 
 // sfdx-project.json example
 {
@@ -28,6 +29,8 @@ JSON
     // Aliases get filled in when packages are created
   }
 }
+```
+
 Development Process:
 Developers work on feature branches checked out from a main development branch (e.g., develop).
 They connect their local VS Code/SFDX CLI to a shared Dev sandbox or individual Dev orgs.
@@ -59,7 +62,7 @@ You'll need Actions secrets for Dev Hub, Integration, UAT, and Prod org authenti
 
 1. Validate PR (.github/workflows/validate-pr.yml)
 
-YAML
+```YAML
 
 name: Validate PR Metadata
 
@@ -92,8 +95,9 @@ jobs:
 
     # Optional: Add specific Apex test execution here if needed
 2. Build Beta Package & Deploy to Integration (.github/workflows/deploy-integ.yml)
+```
 
-YAML
+```YAML
 
 name: Build Beta Package & Deploy to Integration
 
@@ -145,9 +149,11 @@ jobs:
       run: |
         # Be specific about which tests to run
         sf apex run test --test-level RunSpecifiedTests --class-names "MySalesFeatureTests,AnotherTestClass" --target-org integ-org --result-format human --synchronous
+```
+
 3. Promote & Deploy to UAT (.github/workflows/deploy-uat.yml)
 
-YAML
+```YAML
 
 name: Promote Package & Deploy to UAT
 
@@ -196,9 +202,11 @@ jobs:
     - name: Run Apex Tests in UAT
       run: |
         sf apex run test --test-level RunSpecifiedTests --class-names "MySalesFeatureTests,AnotherTestClass" --target-org uat-org --result-format human --synchronous # Adjust test level/classes for UAT
+```
+
 4. Deploy to Production (.github/workflows/deploy-prod.yml)
 
-YAML
+```YAML
 
 name: Deploy Package to Production
 
@@ -238,6 +246,8 @@ jobs:
       run: |
         # Usually RunLocalTests or specific suites validated in UAT
         sf apex run test --test-level RunLocalTests --target-org prod-org --result-format human --synchronous
+```
+
 Addressing the Challenges:
 
 Consistency Dev vs. Package: This is the biggest hurdle.
