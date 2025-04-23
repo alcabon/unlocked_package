@@ -1,3 +1,13 @@
+
+**Based on the strategy we outlined earlier:**
+
+- **Integration**: You build **beta unlocked packages** from the develop branch, and then you deploy those packages into the Integration sandbox.
+- **UAT/Preprod**: You promote the package version created from the release/* branch, and then you **deploy that promoted (released) package into the UAT sandbox.**
+- **Production**: You **deploy the same promoted package that was tested in UAT into Production.**
+  
+So, while the source for building the packages comes directly from the Git branches (develop, release/*), **the actual deployment artifact pushed into the Integration and UAT sandboxes is the unlocked package, not the raw source code via sf project deploy**. This ensures you are testing the package mechanism early in the cycle.
+
+
 ```mermaid
 %%{ init: { 'theme': 'base', 'themeVariables': { 'primaryColor': '#F7941D', 'lineColor': '#fbc02d', 'textColor': '#333','secondaryColor': '#FFFF00', 'tertiaryColor': '#fff' } } }%%
 graph TD
@@ -49,7 +59,54 @@ graph TD
     class GHA_Validate,GHA_BuildBeta,GHA_Promote,GHA_DeployProd action;
 
 ```
+```mermaid
+%%{ init: { 'theme': 'neutral', 'mainBranchName': 'main', 'themeVariables': { 'primaryColor': '#0277bd', 'commitLabelColor': '#333', 'commitLabelBackground': '#e1f5fe' } } }%%
+gitGraph
+    commit id: "Initial Commit"
+    branch develop
+    checkout develop
+    commit id: "Dev Work 1"
+    branch feature/task-A
+    checkout feature/task-A
+    commit id: "Feat A-1"
+    commit id: "Feat A-2"
+    checkout develop
+    commit id: "Dev Work 2"
+    branch feature/task-B
+    checkout feature/task-B
+    commit id: "Feat B-1"
+    checkout develop
+    merge feature/task-A id: "Merge Feat A" tag: "feat-A-merged"
+    checkout feature/task-B
+    commit id: "Feat B-2"
+    checkout develop
+    merge feature/task-B id: "Merge Feat B" tag: "feat-B-merged"
+    commit id: "Deploy to Integration" type: HIGHLIGHT  %% <-- Indicate Integ Deployment
+    commit id: "Pre-Release Work"
+    branch release/v1.0
+    checkout release/v1.0
+    commit id: "Release Prep"
+    commit id: "UAT Fixes / Deploy UAT" type: HIGHLIGHT tag: "v1.0-UAT" %% <-- Indicate UAT Deployment
+    checkout main
+    merge release/v1.0 id: "Merge v1.0" tag: "v1.0-PROD" %% <-- Indicate Prod Deployment via tag
+    checkout develop
+    merge release/v1.0 id: "Merge v1.0 back"
+    commit id: "Post-Release Dev"
+    branch hotfix/HF-101
+    checkout hotfix/HF-101
+    commit id: "Critical Fix"
+    checkout main
+    merge hotfix/HF-101 tag: "v1.0.1-PROD" %% <-- Indicate Prod Deployment via tag
+    checkout develop
+    merge hotfix/HF-101
+```
+The branching strategy we've visualized uses specific branches as the source for deployments to those environments, rather than having dedicated branches named after them:
 
+- **Integration Environment**: Code is typically deployed to the Integration sandbox from the develop branch after feature branches are merged in. The diagram indicates this with the **"Deploy to Integration"** commit on the **develop** branch.
+- **UAT/Preprod Environment**: Code is deployed to the **UAT** sandbox **from a release/* branch**. The diagram shows this with the **"UAT Fixes / Deploy UAT"** commit on the **release/v1.0** branch.
+- **Production Environment**: The main branch itself represents the production-ready code. **Deployments to the Production org happen from the main branch**, typically triggered by merging a **release/*** branch into it. The diagram shows this with the merge to main and the **vX.Y.Z-PROD** tags.
+
+So, the branches in the diagram (develop, release/*, main) correspond to the state of the code that gets deployed to the Integration, UAT, and Production environments, respectively. It's less common to have long-lived Git branches named exactly after the deployment stages themselves in this type of workflow.
 
 # unlocked_package
 
