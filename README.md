@@ -269,13 +269,13 @@ jobs:
         sf apex run test --test-level RunSpecifiedTests --class-names "MySalesFeatureTests,AnotherTestClass" --target-org integ-org --result-format human --synchronous
 ```
 
-Okay, **let's resolve that tricky part **by replacing the hardcoded package version ID with dynamic logic using sf package version list and jq.
+**Let's resolve that tricky part** by replacing the hardcoded package version ID with dynamic logic using sf package version list and jq.
 
 **This script assumes:**
 
 - The package name (e.g., "SalesFeature") is available (here, hardcoded for simplicity, but ideally passed dynamically).
 - The beta package creation step included the --branch develop flag (or dynamically ${{ github.ref_name }} if run on the develop branch push).
-jq is available on the runner.
+- jq is available on the runner.
 
 Here's the updated run section for the Promote Package Version(s) step in your deploy-uat.yml (or equivalent) workflow:
 
@@ -335,14 +335,13 @@ Here's the updated run section for the Promote Package Version(s) step in your d
 - Takes the first element (.[0]) of the sorted array.
 - Extracts its SubscriberPackageVersionId.
 - Uses // empty as a fallback in case no matching version is found.
-- 
+  
 - **Validation:** Added an if statement to check if LATEST_BETA_ID is empty or null and exits with an error if no suitable version was found.
 - **Uses** ::error:: for better visibility in GitHub Actions logs.
 - **Promotion**: Uses the dynamically found $LATEST_BETA_ID in the sf package version promote command.
 - **Output**: Sets the PROMOTED_PACKAGE_VERSION_ID output using the dynamic ID.
 - 
 This approach reliably finds the latest beta package version created from your develop branch, making the promotion step dynamic and removing the need for manual intervention or hardcoding.
-
 
 
 ### 3. Promote & Deploy to UAT (.github/workflows/deploy-uat.yml)
