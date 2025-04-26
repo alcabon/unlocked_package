@@ -39,8 +39,7 @@ The typical Gitflow sequence involves 6:
 
 ### **Mermaid Diagram**
 
-Extrait de code
-
+```mermaid
 %%{init: { 'logLevel': 'fatal', 'theme': 'base', 'themeVariables': { 'primaryColor': '\#f4f4f4', 'primaryTextColor': '\#333', 'lineColor': '\#555', 'textColor': '\#333', 'mainBkg': '\#f4f4f4'}}}%%  
 gitGraph  
    commit id: "Initial" tag: "v1.0.0"  
@@ -78,6 +77,7 @@ gitGraph
    merge hotfix/v1.1.1 id: "Merge Hotfix v1.1.1" tag: "v1.1.1"  
    checkout develop  
    merge hotfix/v1.1.1 id: "Backmerge Hotfix v1.1.1"
+```
 
 ### **Advantages**
 
@@ -123,8 +123,7 @@ The workflow follows these steps 7:
 
 ### **Mermaid Diagram**
 
-Extrait de code
-
+```mermaid
 %%{init: { 'logLevel': 'fatal', 'theme': 'base', 'themeVariables': { 'primaryColor': '\#f4f4f4', 'primaryTextColor': '\#333', 'lineColor': '\#555', 'textColor': '\#333', 'mainBkg': '\#f4f4f4'}}}%%  
 gitGraph  
    commit id: "Initial"  
@@ -142,6 +141,7 @@ gitGraph
    checkout main  
    merge fix/bug-123 id: "Merge Fix"  
    commit id: "Deploy"
+```
 
 ### **Advantages**
 
@@ -198,46 +198,60 @@ The flow depends on the chosen variation:
 
 ### **Mermaid Diagram (Environment Branch Variation)**
 
-Extrait de code
+```mermaid
+%%{init: { 'logLevel': 'fatal', 'theme': 'base', 'themeVariables': { 'primaryColor': '\#f4f4f4', 'primaryTextColor': '\#333', 'lineColor': '\#555', 'textColor': '\#333', 'mainBkg': '\#f4f4f4'}}}%%
+gitGraph
+   commit id: "Initial"
+   branch staging
+   branch production
+   checkout main %% Be explicit about the starting branch %%
+   commit id: "C1"
 
-%%{init: { 'logLevel': 'fatal', 'theme': 'base', 'themeVariables': { 'primaryColor': '\#f4f4f4', 'primaryTextColor': '\#333', 'lineColor': '\#555', 'textColor': '\#333', 'mainBkg': '\#f4f4f4'}}}%%  
-gitGraph  
-   commit id: "Initial"  
-   branch staging  
-   branch production  
-   commit id: "C1"  
-   branch feature/A  
-   checkout feature/A  
-   commit id: "FA1"  
-   commit id: "FA2"  
-   checkout main  
-   merge feature/A id: "Merge A"  
-   commit id: "C2"  
-   checkout staging  
-   merge main id: "Deploy Staging 1"  
-   branch feature/B  
-   checkout feature/B  
-   commit id: "FB1"  
-   checkout main  
-   merge feature/B id: "Merge B"  
-   checkout staging  
-   merge main id: "Deploy Staging 2"  
-   checkout production  
-   merge staging id: "Deploy Prod 1"  
-   checkout main  
-   branch hotfix/C  
-   checkout hotfix/C  
-   commit id: "Fix C"  
-   checkout main  
-   merge hotfix/C id: "Merge Fix C"  
-   checkout staging  
-   merge main id: "Deploy Staging 3 (inc Fix)"  
-   \# Example: Normal flow promotes fix via staging merge  
-   \# checkout production  
-   \# merge staging id: "Deploy Prod 2 (inc Fix)"  
-   \# Example: Urgent fix might be cherry-picked directly if policy allows  
-   \# checkout production  
-   \# cherry-pick commitId:"Fix C" id:"Cherry-pick Fix C"
+   %% Feature A Development %%
+   branch feature/A
+   checkout feature/A
+   commit id: "FA1"
+   commit id: "FA2"
+   checkout main
+   merge feature/A id: "Merge A"
+   commit id: "C2"
+
+   %% Feature B Development (Branched from main) %%
+   branch feature/B
+   checkout feature/B
+   commit id: "FB1"
+   checkout main
+   merge feature/B id: "Merge B"
+
+   %% Deployments %%
+   checkout staging
+   commit id: "Prep Staging Merge"          %% <<< ADDED DUMMY COMMIT ON STAGING >>>
+   merge main id: "Deploy Staging 1+2"      %% Try merging main into staging again %%
+
+   checkout production
+   merge staging id: "Deploy Prod 1"
+
+   %% Hotfix C Development and Integration (Alternative Workflow) %%
+   checkout main               %% Ensure we start from main for the hotfix branch %%
+   branch hotfix/C
+   checkout hotfix/C
+   commit id: "Fix C"
+   checkout main               %% Switch back to main %%
+   merge hotfix/C id: "Merge Fix C (main)" %% Merge hotfix into main %%
+   checkout staging              %% Switch to staging %%
+   merge hotfix/C id: "Merge Fix C (staging)" %% Merge hotfix directly into staging %%
+
+   %% --- Example Scenarios (Commented Out) --- %%
+
+   %% Example 1: Normal flow promotes fix via staging merge %%
+   %% Staging now contains the fix directly. Promoting staging to production includes it.
+   %% checkout production
+   %% merge staging id: "Deploy Prod 2 (inc Fix)"
+
+   %% Example 2: Urgent fix might be cherry-picked directly if policy allows %%
+   %% checkout production
+   %% cherry-pick id:"Fix C" tag:"Cherry-pick Fix C"
+```
 
 ### **Advantages**
 
@@ -287,36 +301,37 @@ The TBD workflow emphasizes frequent integration 9:
 
 ### **Mermaid Diagram**
 
-Extrait de code
+```mermaid
+%%{init: { 'logLevel': 'fatal', 'theme': 'base', 'themeVariables': { 'primaryColor': '\#f4f4f4', 'primaryTextColor': '\#333', 'lineColor': '\#555', 'textColor': '\#333', 'mainBkg': '\#f4f4f4'}}}%%
+gitGraph
+   commit id: "Initial"
+   commit id: "C1"  %% First commit on main %%
+   branch task/A
+   checkout task/A
+   commit id: "A1"
+   checkout main
+   merge task/A id: "Merge A"
+   commit id: "C2"
+   branch task/B
+   checkout task/B
+   commit id: "B1"
+   checkout main
+   merge task/B id: "Merge B"
+   commit id: "C3 (Direct)"
+   branch task/C
+   checkout task/C
+   commit id: "TC1"  %% Renamed from "C1" to avoid duplicate ID %%
+   checkout main
+   merge task/C id: "Merge C"
+   commit id: "Release Point" tag: "v2.0"
 
-%%{init: { 'logLevel': 'fatal', 'theme': 'base', 'themeVariables': { 'primaryColor': '\#f4f4f4', 'primaryTextColor': '\#333', 'lineColor': '\#555', 'textColor': '\#333', 'mainBkg': '\#f4f4f4'}}}%%  
-gitGraph  
-   commit id: "Initial"  
-   commit id: "C1"  
-   branch task/A  
-   checkout task/A  
-   commit id: "A1"  
-   checkout main  
-   merge task/A id: "Merge A"  
-   commit id: "C2"  
-   branch task/B  
-   checkout task/B  
-   commit id: "B1"  
-   checkout main  
-   merge task/B id: "Merge B"  
-   commit id: "C3 (Direct)"  
-   branch task/C  
-   checkout task/C  
-   commit id: "C1"  
-   checkout main  
-   merge task/C id: "Merge C"  
-   commit id: "Release Point" tag: "v2.0"  
-   \# Optional release branch for stabilization  
-   \# branch release/v2.0  
-   \# checkout release/v2.0  
-   \# commit id: "Stabilize"  
-   \# checkout main (development continues on main)  
-   \# commit id: "C4"
+   %% Optional release branch for stabilization %%
+   %% branch release/v2.0
+   %% checkout release/v2.0
+   %% commit id: "Stabilize"
+   %% checkout main %% Development continues on main after stabilization/release %%
+   %% commit id: "C4"
+```
 
 ### **Advantages**
 
