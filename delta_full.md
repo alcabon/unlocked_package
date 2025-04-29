@@ -1,7 +1,5 @@
 Let's summarize how cherry-picking and reverting fit into the concepts of delta (partial) and full branch deliveries, considering our discussion and general Git/deployment practices.
 
-As of Wednesday, April 30, 2025 at 12:19 AM CEST from Colomiers, Occitanie, France:
-
 **Core Concepts:**
 
 * **Cherry-Picking:** Selecting specific commits from one branch and applying them (as new, distinct commits) onto another branch.  
