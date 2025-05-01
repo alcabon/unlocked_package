@@ -115,21 +115,18 @@ Vous avez dit :
 
 
 ChatGPT a dit :
-Excellent — now we’re getting into proper Git Flow territory, where develop and main are your long-lived branches.
+**Excellent — now we’re getting into proper Git Flow territor**y, where develop and main are your long-lived branches.
 This is one of the most popular professional workflows, so let’s build a clear, step-by-step process with those.
 
 🚀 Standard Git Release Process (with develop and main)
-In this model:
 
-main always reflects production-ready code
+**In this model:**
+- main always reflects production-ready code
+- develop is where active development happens
+- Feature branches branch off develop
+- Release branches stabilize a set of changes before merging into both main and develop
 
-develop is where active development happens
-
-Feature branches branch off develop
-
-Release branches stabilize a set of changes before merging into both main and develop
-
-Here’s the clear process:
+**Here’s the clear process:**
 
 🗺️ Process Map
 ```css
@@ -139,9 +136,7 @@ develop ----f----f----f----R----R--/
 ```
 
 f = feature commits
-
 R = release commits
-
 M = merge commit (release into main + tag)
 
 ⚙️ Step-by-Step Detailed Process
@@ -243,8 +238,6 @@ If you want, I can also show feature branch handling in this model (off develop)
 Would you like that next? 🚀
 
 
-
-
 Vous avez dit :
 **why don't you merge into develop and after you could merge develop into main ?**
 
@@ -298,17 +291,16 @@ Would you like a real command example to make this even more concrete?
 I can show you what happens with actual merges.
 
 Vous avez dit :
-**ok excellent clarification, that can work fine with a trunk-based strategy but if we have long lived branches (int, uat, prod) associated with salesforce org each time, that breaks the trunk-based strategy
-**
+**ok excellent clarification, that can work fine with a trunk-based strategy but if we have long lived branches (int, uat, prod) associated with salesforce org each time, that breaks the trunk-based strategy**
 
 ChatGPT a dit :
-Yes — exactly.
-Now we’re stepping into more complex release environments, especially common in Salesforce development, where:
+**Yes — exactly.
+Now we’re stepping into more complex release environments, especially common in Salesforce development, where:**
 👉 You have multiple long-lived branches,
 👉 Each one corresponds to a specific Salesforce org / environment (Integration, UAT, Production),
 👉 And trunk-based development starts to get harder to follow cleanly.
 
-Let’s make this crystal clear.
+**Let’s make this crystal clear.**
 
 🏗️ Your setup looks roughly like this:
 ```java
@@ -316,38 +308,37 @@ develop  → Integration org (INT)
 uat      → UAT org
 main     → Production org (PROD)
 develop (INT) → ongoing work, dev-tested
-
 uat → business testing / validation
-
 main (PROD) → production releases
 ```
 These are long-lived, parallel branches, not short-lived feature or release branches anymore.
 
 ❓ Why does this break trunk-based strategy?
+
 Trunk-based development says:
 
-“Everyone works on a single shared branch (trunk) and we deploy frequently and continuously.”
+**“Everyone works on a single shared branch (trunk) and we deploy frequently and continuously.”**
 
 But when you have multiple environments and each has its own branch, you are in effect doing "promotion-based branching"
 → Code is promoted (merged) from one branch to the next environment (INT → UAT → PROD).
 
-This creates branch divergence, which is exactly what trunk-based tries to avoid.
+**This creates branch divergence, which is exactly what trunk-based tries to avoid.**
 
 ⚖️ Realistic Trade-off in Salesforce (and similar environments)
 In Salesforce, where metadata deployments are slow, testing is org-specific, and environments are tightly coupled to their business purpose —
 having branches per environment is often practical and necessary, even if it violates pure trunk-based ideals.
 
-So — you accept a hybrid model:
+**So — you accept a hybrid model:**
 ✅ Use "trunk-like" discipline (frequent integration)
 ✅ But with environment branches to reflect real-world promotion and testing flows
 
 🚦 Recommended process (in Salesforce projects)
 Let’s say:
 
-Branch	Org	Purpose
-develop	INT	Active dev, integration testing
-uat	UAT	User acceptance testing
-main	PROD	Production
+- Branch	Org	Purpose
+- develop	INT	Active dev, integration testing
+- uat	UAT	User acceptance testing
+- main	PROD	Production
 
 Here’s a clean, safe flow:
 
@@ -392,7 +383,7 @@ BUT — it’s a practical hybrid that respects:
 ✅ Clear promotion path
 ✅ Controlled environment releases
 
-This model is sometimes called Environment Promotion Flow or Environment Branching Strategy — very common in Salesforce, enterprise, and regulated systems.
+This model is sometimes called **Environment Promotion Flow** or **Environment Branching Strategy** — very common in Salesforce, enterprise, and regulated systems.
 
 ⚡ TL;DR
 ✅ You can still apply trunk-based mindset (fast merges, few branches)
@@ -404,7 +395,7 @@ Would you like that next? ✨
 
 ChatGPT a dit :
 You're asking exactly the right question —
-"What exact branching model am I describing and recommending right now?"
+**"What exact branching model am I describing and recommending right now?"**
 
 Let’s nail it down clearly and name it properly so it’s usable in your team discussions.
 
