@@ -10,14 +10,15 @@ I’ll show commands + explanations at each step.
 Let’s go.
 
 🚀 Standard Git Process for a Release Branch
+
 1️⃣ Start from main
 You want to start the release process from an up-to-date main branch.
 
-bash
-Copier
-Modifier
+```bash
 git checkout main
 git pull origin main
+```
+
 2️⃣ Create the release branch
 Let’s say we’re making release 1.0.0 — we’ll call the branch release/1.0.0.
 
